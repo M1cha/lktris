@@ -30,6 +30,7 @@
 #include <malloc.h>
 #include <printf.h>
 #include <endian.h>
+#include <rand.h>
 #include <arch/defines.h>
 
 unsigned gcd(unsigned m, unsigned n);
