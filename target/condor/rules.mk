@@ -5,7 +5,11 @@ INCLUDES += -I$(LK_TOP_DIR)/dev/gcdb/display -I$(LK_TOP_DIR)/dev/gcdb/display/in
 
 PLATFORM := msm8610
 
+ifeq ($(ENABLE_2NDSTAGE_BOOT),1)
+MEMBASE := 0x07C00000 # SDRAM
+else
 MEMBASE := 0x07A00000 # SDRAM
+endif
 MEMSIZE := 0x00100000 # 1MB
 
 BASE_ADDR        := 0x00000

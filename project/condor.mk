@@ -9,6 +9,7 @@ MODULES += app/aboot
 DEBUG := 1
 EMMC_BOOT := 1
 ENABLE_SDHCI_SUPPORT := 1
+ENABLE_2NDSTAGE_BOOT := 1
 
 #enable power on vibrator feature
 ENABLE_PON_VIB_SUPPORT := true
@@ -40,4 +41,8 @@ endif
 
 ifeq ($(ENABLE_SDHCI_SUPPORT),1)
 DEFINES += MMC_SDHCI_SUPPORT=1
+endif
+
+ifeq ($(ENABLE_2NDSTAGE_BOOT),1)
+DEFINES += BOOT_2NDSTAGE=1
 endif
