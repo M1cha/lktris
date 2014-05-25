@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     unsigned pagesize = 2048;
     int fd;
     SHA_CTX ctx;
-    uint8_t* sha;
+    const uint8_t* sha;
     unsigned base           = 0x10000000;
     unsigned kernel_offset  = 0x00008000;
     unsigned ramdisk_offset = 0x01000000;
