@@ -46,3 +46,7 @@ endif
 ifeq ($(ENABLE_2NDSTAGE_BOOT),1)
 DEFINES += BOOT_2NDSTAGE=1
 endif
+
+ifeq ($(EMMC_BOOT),1)
+DEFINES += _EMMC_BOOT=1
+endif
