@@ -30,6 +30,7 @@ mkbootimg:
 
 lkboot.img: mkbootimg $(OUTBIN)
 	$(APPSBOOTHEADER_DIR)/mkbootimg --kernel $(OUTBIN) --ramdisk /dev/null --pagesize 2048 \
+		--dt $(SRC_DIR)/dt.img --tags_offset 0x00000100 \
 		--base $(shell printf "0x%X" $$(($(MEMBASE)-0x8000))) -o $(APPSBOOTHEADER_DIR)/lkboot.img
 
 appsboot.mbn: appsboothd.mbn $(OUTBIN)
