@@ -27,7 +27,6 @@ MODULES += \
 	dev/keys \
 	lib/ptable \
 	dev/pmic/pm8x41 \
-	dev/gcdb/display \
 	dev/vib \
 	lib/libfdt
 
@@ -44,5 +43,4 @@ DEFINES += \
 OBJS += \
     $(LOCAL_DIR)/../msm8610/init.o \
     $(LOCAL_DIR)/../msm8610/meminfo.o \
-    $(LOCAL_DIR)/../msm8610/target_display.o \
-    $(LOCAL_DIR)/../msm8610/oem_panel.o
+    $(LOCAL_DIR)/target_display.o
