@@ -32,7 +32,9 @@
 #include <err.h>
 #include <stdlib.h>
 #include <dev/fbcon.h>
+#if DISPLAY_SPLASH_SCREEN
 #include <splash.h>
+#endif
 #include <platform.h>
 #include <string.h>
 
@@ -214,6 +216,7 @@ void fbcon_putImage(struct fbimage *fbimg, bool flag);
 
 void display_image_on_screen()
 {
+#if DISPLAY_SPLASH_SCREEN
 	struct fbimage default_fbimg, *fbimg;
 	bool flag = true;
 
@@ -233,6 +236,7 @@ void display_image_on_screen()
 	}
 
 	fbcon_putImage(fbimg, flag);
+#endif
 }
 
 void fbcon_putImage(struct fbimage *fbimg, bool flag)
