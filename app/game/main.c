@@ -51,6 +51,7 @@
 #endif
 
 #define FASTBOOT_MODE   0x77665500
+#define FPS 30
 
 static struct fbconfig fb;
 
@@ -110,6 +111,8 @@ void fb_flip(void) {
 void game_init(const struct app_descriptor *app)
 {
 	struct fbcon_config* fbcon = NULL;
+	time_t t1, t2;
+	unsigned delta = 0, delay = 1000/FPS;
 
 	ASSERT((MEMBASE + MEMSIZE) > MEMBASE);
 
@@ -135,8 +138,16 @@ void game_init(const struct app_descriptor *app)
 	setFramebuffer(&fb);
 
 	while(1) {
-		update(10);
-		mdelay(10);
+		t1 = current_time();
+		update(delta);
+		t2 = current_time();
+		delta = t2-t1;
+
+		if(delta<delay) {
+			unsigned wait = delay-delta;
+			mdelay(wait);
+			delta += wait;
+		}
 	}
 }
 
