@@ -103,6 +103,8 @@ void aboot_fastboot_register_commands(void)
 }
 
 void fb_flip(void) {
+	struct fbcon_config* fbcon = fbcon_display();
+	memcpy(fbcon->base, fb.buf, fb.width*fb.height*fb.bytes_per_pixel);
 }
 
 void game_init(const struct app_descriptor *app)
@@ -129,7 +131,7 @@ void game_init(const struct app_descriptor *app)
 	fb.bpp = fbcon->bpp;
 	fb.bytes_per_pixel = fb.bpp/8;
 	fb.pitch = fbcon->stride;
-	fb.buf = fbcon->base;
+	fb.buf = malloc(fb.width*fb.height*fb.bytes_per_pixel);
 	setFramebuffer(&fb);
 
 	while(1) {
