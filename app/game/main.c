@@ -135,6 +135,7 @@ void game_init(const struct app_descriptor *app)
 	fb.bytes_per_pixel = fb.bpp/8;
 	fb.pitch = fbcon->stride;
 	fb.buf = malloc(fb.width*fb.height*fb.bytes_per_pixel);
+	memset(fb.buf, 0, fb.width*fb.height*fb.bytes_per_pixel);
 	setFramebuffer(&fb);
 
 	while(1) {
