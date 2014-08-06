@@ -4,7 +4,7 @@ LOCAL_DIR := $(GET_LOCAL_DIR)
 
 TARGET := condor
 
-MODULES += app/aboot
+MODULES += app/game
 
 DEBUG := 1
 EMMC_BOOT := 1
