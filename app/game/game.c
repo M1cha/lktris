@@ -1,148 +1,23 @@
-/*
- * Copyright (c) 2009, Google Inc.
- * All rights reserved.
- *
- * Copyright (c) 2009-2014, The Linux Foundation. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of The Linux Foundation nor
- *       the names of its contributors may be used to endorse or promote
- *       products derived from this software without specific prior written
- *       permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+#include <common.h>
 
-#include <app.h>
-#include <debug.h>
-#include <arch/arm.h>
-#include <string.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <kernel/thread.h>
-#include <arch/ops.h>
+static struct fbconfig *fb = NULL;
 
-#include <dev/flash.h>
-#include <lib/ptable.h>
-#include <dev/keys.h>
-#include <dev/fbcon.h>
-#include <baseband.h>
-#include <target.h>
-#include <mmc.h>
-#include <partition_parser.h>
-#include <platform.h>
-#include <crypto_hash.h>
-#include <malloc.h>
-#include <boot_stats.h>
-#include <sha.h>
-#include <platform/iomap.h>
-#include <boot_device.h>
-
-#include "../aboot/fastboot.h"
-
-#ifdef MEMBASE
-#define EMMC_BOOT_IMG_HEADER_ADDR (0xFF000+(MEMBASE))
-#else
-#define EMMC_BOOT_IMG_HEADER_ADDR 0xFF000
-#endif
-
-#ifndef MEMSIZE
-#define MEMSIZE 1024*1024
-#endif
-
-#define MAX_TAGS_SIZE   1024
-
-#define RECOVERY_MODE   0x77665502
-#define FASTBOOT_MODE   0x77665500
-
-void cmd_reboot(const char *arg, void *data, unsigned sz)
-{
-	dprintf(INFO, "rebooting the device\n");
-	fastboot_okay("");
-	reboot_device(0);
+void setFramebuffer(struct fbconfig *config) {
+	fb = config;
 }
 
-void cmd_reboot_bootloader(const char *arg, void *data, unsigned sz)
-{
-	dprintf(INFO, "rebooting the device\n");
-	fastboot_okay("");
-	reboot_device(FASTBOOT_MODE);
-}
+void update(double delta) {
+	static double time = 0;
+	time+=delta;
 
-#if WITH_DEBUG_LOG_BUF
-void cmd_oem_lk_log(const char *arg, void *data, unsigned sz)
-{
-	unsigned i;
-	char* pch;
-	char* buf = strdup(lk_log_getbuf());
-	unsigned size = lk_log_getsize();
+	if(time>1000) {
+		static int color = 0xff;
+		if(color==0xff) color=0x33;
+		else if(color==0x33) color=0xff;
 
-	pch = strtok(buf, "\n\r");
-	while (pch != NULL) {
-		char* ptr = pch;
-		while(ptr!=NULL) {
-			fastboot_info(ptr);
-			if(strlen(ptr)>MAX_RSP_SIZE-5)
-				ptr+=MAX_RSP_SIZE-5;
-			else ptr=NULL;
-		}
+		memset(fb->buf, color, fb->width * fb->bytes_per_pixel * fb->height);
+		fb_flip();
 
-		pch = strtok(NULL, "\n\r");
+		time = 0;
 	}
-
-	free(buf);
-	fastboot_okay("");
 }
-#endif
-
-/* register commands and variables for fastboot */
-void aboot_fastboot_register_commands(void)
-{
-	fastboot_register("reboot",            cmd_reboot);
-	fastboot_register("reboot-bootloader", cmd_reboot_bootloader);
-#if WITH_DEBUG_LOG_BUF
-	fastboot_register("oem lk_log",        cmd_oem_lk_log);
-#endif
-}
-
-void game_init(const struct app_descriptor *app)
-{
-	unsigned reboot_mode = 0;
-	bool boot_into_fastboot = false;
-
-	ASSERT((MEMBASE + MEMSIZE) > MEMBASE);
-
-	/* Display splash screen if enabled */
-#if DISPLAY_SPLASH_SCREEN
-	dprintf(SPEW, "Display Init: Start\n");
-	target_display_init(device.display_panel);
-	dprintf(SPEW, "Display Init: Done\n");
-#endif
-
-	/* register aboot specific fastboot commands */
-	aboot_fastboot_register_commands();
-
-	/* initialize and start fastboot */
-	fastboot_init(target_get_scratch_address(), target_get_max_flash_size());
-}
-
-APP_START(game)
-	.init = game_init,
-APP_END
