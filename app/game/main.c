@@ -38,6 +38,7 @@
 #include <target.h>
 #include <dev/fbcon.h>
 #include <platform/timer.h>
+#include <kernel/timer.h>
 #include "../aboot/fastboot.h"
 
 #ifdef MEMBASE
@@ -51,7 +52,7 @@
 #endif
 
 #define FASTBOOT_MODE   0x77665500
-#define FPS 30
+#define FPS 5
 
 static struct fbconfig fb;
 
@@ -105,14 +106,29 @@ void aboot_fastboot_register_commands(void)
 
 void fb_flip(void) {
 	struct fbcon_config* fbcon = fbcon_display();
+#ifdef PROJECT_MSM8960
+	trigger_mdp_dsi();
+#else
 	memcpy(fbcon->base, fb.buf, fb.width*fb.height*fb.bytes_per_pixel);
+#endif
+}
+
+static timer_t timer;
+static unsigned delta = 0;
+static time_t time_last;
+
+static enum handler_return timer_func(timer_t *t, time_t now, void *arg) {
+	delta = now - time_last;
+	time_last = now;
+
+	update(delta);
+
+	return INT_RESCHEDULE;
 }
 
 void game_init(const struct app_descriptor *app)
 {
 	struct fbcon_config* fbcon = NULL;
-	time_t t1, t2;
-	unsigned delta = 0, delay = 1000/FPS;
 
 	ASSERT((MEMBASE + MEMSIZE) > MEMBASE);
 
@@ -134,22 +150,17 @@ void game_init(const struct app_descriptor *app)
 	fb.bpp = fbcon->bpp;
 	fb.bytes_per_pixel = fb.bpp/8;
 	fb.pitch = fbcon->stride;
+#ifdef PROJECT_MSM8960
+	fb.buf = fbcon->base;
+#else
 	fb.buf = malloc(fb.width*fb.height*fb.bytes_per_pixel);
 	memset(fb.buf, 0, fb.width*fb.height*fb.bytes_per_pixel);
-	setFramebuffer(&fb);
+#endif
+	init(&fb);
 
-	while(1) {
-		t1 = current_time();
-		update(delta);
-		t2 = current_time();
-		delta = t2-t1;
-
-		if(delta<delay) {
-			unsigned wait = delay-delta;
-			mdelay(wait);
-			delta += wait;
-		}
-	}
+	time_last = current_time();
+	timer_initialize(&timer);
+	timer_set_periodic(&timer, delay, &timer_func, NULL);
 }
 
 APP_START(game)
