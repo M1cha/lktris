@@ -7,5 +7,6 @@ OBJS += \
 	$(LOCAL_DIR)/main.o \
 	$(LOCAL_DIR)/fb.o \
 	$(LOCAL_DIR)/game.o \
+	$(LOCAL_DIR)/stone.o \
 	$(LOCAL_DIR)/../aboot/fastboot.o
 
