@@ -43,27 +43,7 @@ void rand_add_entropy(const void *buf, size_t len)
 	randseed ^= enp;
 }
 
-int
-rand (void)
+int rand(void)
 {
-  unsigned int next = randseed;
-  int result;
-
-  next *= 1103515245;
-  next += 12345;
-  result = (unsigned int) (next / 65536) % 2048;
-
-  next *= 1103515245;
-  next += 12345;
-  result <<= 10;
-  result ^= (unsigned int) (next / 65536) % 1024;
-
-  next *= 1103515245;
-  next += 12345;
-  result <<= 10;
-  result ^= (unsigned int) (next / 65536) % 1024;
-
-  randseed = next;
-
-  return result;
+	return (randseed = randseed * 1664525 + 1013904223);
 }
