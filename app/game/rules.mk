@@ -8,5 +8,6 @@ OBJS += \
 	$(LOCAL_DIR)/fb.o \
 	$(LOCAL_DIR)/game.o \
 	$(LOCAL_DIR)/stone.o \
+	$(LOCAL_DIR)/font.o \
 	$(LOCAL_DIR)/../aboot/fastboot.o
 

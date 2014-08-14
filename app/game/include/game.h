@@ -8,9 +8,9 @@
 #define GRID_WIDTH 12
 #define GRID_HEIGHT 24
 #define MAP_WIDTH GRID_WIDTH-2
-#define MAP_HEIGHT GRID_HEIGHT-2
+#define MAP_HEIGHT GRID_HEIGHT-1
 #define MAP_POSX 1
-#define MAP_POSY 1
+#define MAP_POSY 0
 
 typedef unsigned map_data[MAP_WIDTH][MAP_HEIGHT];
 extern map_data map;

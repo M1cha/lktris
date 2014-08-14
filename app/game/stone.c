@@ -69,15 +69,25 @@ static struct stone* stones[NUM_STONES] = {
 	&stone7,
 };
 
-int myRand(int low, int high) {
-   srand(current_time());
-   return (rand()%10) % (high - low + 1) + low;
-}
+#if LK
+unsigned myRand(unsigned low, unsigned high) {
+	unsigned long time;
 
+#if TARGET_MSM8960
+	time = readl(GPT_COUNT_VAL);
+#else
+	time = qtimer_get_phy_timer_cnt();
+#endif
+
+	return (time%10) % (high - low + 1) + low;
+}
+#else
 // http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range
-static int getRandomStone(void) {
+static unsigned getRandomStone(void) {
 	unsigned long r, n = NUM_STONES-1+1;
-	srand(current_time());
+	struct timespec t1;
+	clock_gettime(CLOCK_MONOTONIC, &t1);
+	srand(t1.tv_nsec);
 
 	r = n / 2;
 	r = (rand() * n + r) / (RAND_MAX + 1UL);
@@ -86,10 +96,21 @@ static int getRandomStone(void) {
 
 	return r;
 }
+#endif
 
 void newStone(void) {
-	int stone = myRand(0,6);
-	printf("stone%d\n", rand());
+	unsigned stone;
+#if LK
+	stone = myRand(0,6);
+#else
+	stone = getRandomStone();
+#endif
+
+	if(stone>6) {
+		printf("ERR: stone=%d\n", stone);
+		stone=0;
+	}
+
 	active_stone = *stones[stone];
 	stone_posx = 0 - active_stone.offset_x;
 	stone_posy = 0 - active_stone.offset_y;
@@ -120,26 +141,21 @@ void copyStone2Map(void) {
 }
 
 static int stoneOverlaps(int offset_x, int offset_y) {
-	unsigned x,y;
-	for(y=0; y<active_stone.diameter; y++) {
-		for(x=0; x<active_stone.diameter; x++) {
-
+	int x,y;
+	for(y=0; y<(int)active_stone.diameter; y++) {
+		for(x=0; x<(int)active_stone.diameter; x++) {
 			if(
-				// position x/y <0	
-				// TODO check stone parts
-				(stone_posx+offset_x<0 || stone_posy+offset_y<0)
+				// we have a stone part
+				active_stone.data[y][x]
+				&& (
+					// position x/y <0
+					(stone_posx+x+offset_x<0 || stone_posy+y+offset_y<0)
 
-				|| (
-					// we have a stone part
-					active_stone.data[y][x] 
-					&& (
-						// position is outside map (right or bottom)
-						(stone_posx+x+offset_x>=MAP_WIDTH || stone_posy+y+offset_y>=MAP_HEIGHT)
+					// position is outside map (right or bottom)
+					|| (stone_posx+x+offset_x>=MAP_WIDTH || stone_posy+y+offset_y>=MAP_HEIGHT)
 
-						// there's another stone on the map
-						|| map[stone_posx+x+offset_x][stone_posy+y+offset_y]
-						
-					)
+					// there's another stone on the map
+					|| map[stone_posx+x+offset_x][stone_posy+y+offset_y]
 				)
 			)
 				return 1;

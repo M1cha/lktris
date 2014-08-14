@@ -5,6 +5,7 @@ map_data map = {{}};
 
 // private
 static struct fbconfig *fb = NULL;
+static mutex_t map_lock;
 
 static void fallDown(int index) {
 	unsigned x,y;
@@ -45,12 +46,13 @@ void init(struct fbconfig *config) {
 	fbGridSetSize(fb, GRID_WIDTH, GRID_HEIGHT);
 
 	newStone();
+	mutex_init(&map_lock);
+	font_init();
 }
 
 void update(double delta) {
 	static unsigned time = 0, mod, c;
-	static const unsigned time_stone_drop = 500;
-
+	static const unsigned time_stone_drop = 500; // 70-1000
 	time+=(unsigned)delta;
 
 	// input
@@ -68,15 +70,22 @@ void update(double delta) {
 	c = time / time_stone_drop;
 	if(c>0) {
 		time = mod;
+		mutex_acquire(&map_lock);
 		if(!stoneCanDown()) {
 			// bottom reached
 			// TODO handel c>1
+
 			copyStone2Map();
 			tryClearMap();
+
 			newStone();
 		}
 		else stone_posy+=c;
+
+		if(c>1) printf("WARN: c==%d\n", c);
+		mutex_release(&map_lock);
 	}
+
 }
 
 void render(void) {
@@ -87,7 +96,6 @@ void render(void) {
 
 	// border
 	for(i=0; i<fb->grid_w; i++) {
-		fbGridSetColor(fb, i, 0, COLOR_BORDER);
 		fbGridSetColor(fb, i, fb->grid_h-1, COLOR_BORDER);
 	}
 	for(i=0; i<fb->grid_h; i++) {
@@ -95,17 +103,24 @@ void render(void) {
 		fbGridSetColor(fb, fb->grid_w-1, i, COLOR_BORDER);
 	}
 
+	mutex_acquire(&map_lock);
+
 	// map
 	for(i=0; i<MAP_HEIGHT; i++) {
 		for(j=0; j<MAP_WIDTH; j++) {
 			if(map[j][i]) {
-				fbGridSetColor(fb, j+1, i+1, map[j][i]);
+				fbGridSetColor(fb, j+MAP_POSX, i+MAP_POSY, map[j][i]);
 			}
 		}
 	}
 
 	// active stone
 	drawStone(fb);
+
+	mutex_release(&map_lock);
+
+	//font_printf(fb, 0, 0, "Time: %us", current_time()/1000);
+	font_printf(fb, 0, 40, "FPS: %ld/%ld", game_get_fps_real(), game_get_fps_limited());
 
 	// flip
 	fb_flip();

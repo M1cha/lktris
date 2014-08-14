@@ -39,6 +39,7 @@
 #include <dev/fbcon.h>
 #include <platform/timer.h>
 #include <kernel/timer.h>
+#include <kernel/thread.h>
 #include "../aboot/fastboot.h"
 
 #ifdef MEMBASE
@@ -52,7 +53,7 @@
 #endif
 
 #define FASTBOOT_MODE   0x77665500
-#define FPS 5
+#define FPS 15
 
 static struct fbconfig fb;
 
@@ -107,23 +108,95 @@ void aboot_fastboot_register_commands(void)
 void fb_flip(void) {
 	struct fbcon_config* fbcon = fbcon_display();
 #ifdef PROJECT_MSM8960
+	enter_critical_section();
 	trigger_mdp_dsi();
+	mdelay(10);
+	exit_critical_section();
 #else
 	memcpy(fbcon->base, fb.buf, fb.width*fb.height*fb.bytes_per_pixel);
 #endif
 }
 
-static timer_t timer;
+static int keymap[0xffff] = {0};
+int isKeyPressed(int code) {
+	int ret = keymap[code];
+	keymap[code] = 0;
+	return ret;
+}
+
 static unsigned delta = 0;
 static time_t time_last;
 
-static enum handler_return timer_func(timer_t *t, time_t now, void *arg) {
-	delta = now - time_last;
-	time_last = now;
+extern int target_volume_up(void);
+extern uint32_t target_volume_down(void);
 
-	update(delta);
+static int update_thread(void *arg) {
+	time_t t1;
+	long wait;
 
-	return INT_RESCHEDULE;
+	while(1) {
+		// time: now
+		time_t now = current_time();
+
+		// update delta
+		delta = now - time_last;
+		time_last = now;
+
+		// get time for sleep
+		t1 = current_time();
+
+		// key check
+		int up = target_volume_up();
+		int down = target_volume_down();
+		if(up && down) keymap[KEY_UP] = 1;
+		else if(up) keymap[KEY_LEFT] = 1;
+		else if(down) keymap[KEY_RIGHT] = 1;
+		else if(pm8x41_get_pwrkey_is_pressed()) keymap[KEY_DOWN] = 1;
+
+		// update
+		update(delta);
+
+		// sleep
+		wait = (10)-(current_time()-t1);
+		if(wait>0)
+			thread_sleep(wait);
+		else if(wait<0) {
+			printf("WARN: update took too long %ld\n", wait);
+		}
+	}
+
+	return 0;
+}
+
+static long wait = 0;
+static int render_thread(void *arg) {
+	time_t t1;
+	//unsigned long wait;
+	while(1) {
+		// time: now
+		t1 = current_time();
+
+		// render
+		render();
+
+		// wait
+		wait = (1000/(float)FPS)-(current_time()-t1);
+		if(wait>0)
+			thread_sleep(wait);
+		else if(wait<0) {
+			printf("WARN: render took too long %ld\n", wait);
+		}
+	}
+
+	return 0;
+}
+
+long game_get_fps_real(void) {
+	return 1000/(1000/FPS-wait);
+}
+
+long game_get_fps_limited(void) {
+	return FPS;
 }
 
 void game_init(const struct app_descriptor *app)
@@ -158,9 +231,23 @@ void game_init(const struct app_descriptor *app)
 #endif
 	init(&fb);
 
+	// time now
 	time_last = current_time();
-	timer_initialize(&timer);
-	timer_set_periodic(&timer, delay, &timer_func, NULL);
+	thread_t *thr;
+
+	thr = thread_create(app->name, &update_thread, 0, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE);
+	if(!thr)
+	{
+		return;
+	}
+	thread_resume(thr);
+
+	thr = thread_create(app->name, &render_thread, 0, DEFAULT_PRIORITY, DEFAULT_STACK_SIZE);
+	if(!thr)
+	{
+		return;
+	}
+	thread_resume(thr);
 }
 
 APP_START(game)
