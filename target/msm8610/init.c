@@ -138,6 +138,11 @@ static void target_keystatus()
 		keys_post_event(KEY_VOLUMEUP, 1);
 }
 
+int target_power_key(void)
+{
+	return pm8x41_get_pwrkey_is_pressed();
+}
+
 void target_sdc_init()
 {
 	struct mmc_config_data config;

@@ -175,7 +175,7 @@ static int update_thread(void *arg) {
 
 			if(up) keymap[KEY_LEFT] = 1;
 			else if(down) keymap[KEY_RIGHT] = 1;
-			else if(pm8x41_get_pwrkey_is_pressed()) keymap[KEY_UP] = 1;
+			else if(target_power_key()) keymap[KEY_UP] = 1;
 		}
 
 		// update
