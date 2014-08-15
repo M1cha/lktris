@@ -117,14 +117,35 @@ void fb_flip(void) {
 #endif
 }
 
-static int keymap[0xffff] = {0};
+static int keymap[MAX_KEYS] = {0};
+static const unsigned keymap_wait_time = 300;
+static unsigned long long keymap_delta = 1000;
+static int delivered_key = 0;
 int isKeyPressed(int code) {
 	int ret = keymap[code];
-	keymap[code] = 0;
-	return ret;
+	if(ret && keymap_delta>=keymap_wait_time) {
+		keymap[code] = 0;
+		delivered_key = 1;	
+		return ret;
+	}
+
+	return 0;
 }
 
-static unsigned delta = 0;
+int isAnyKeyPressed(void) {
+	int i, found = 0;
+
+	for(i=0; i<MAX_KEYS; i++) {
+		if(keymap[i]) found = 1;
+		keymap[i] = 0;
+	}
+
+	if(found) delivered_key = 1;
+
+	return found;
+}
+
+static unsigned delta = 1000;
 static time_t time_last;
 
 extern int target_volume_up(void);
@@ -146,15 +167,24 @@ static int update_thread(void *arg) {
 		t1 = current_time();
 
 		// key check
-		int up = target_volume_up();
-		int down = target_volume_down();
-		if(up && down) keymap[KEY_UP] = 1;
-		else if(up) keymap[KEY_LEFT] = 1;
-		else if(down) keymap[KEY_RIGHT] = 1;
-		else if(pm8x41_get_pwrkey_is_pressed()) keymap[KEY_DOWN] = 1;
+		keymap_delta+=delta;
+
+		if(keymap_delta>=keymap_wait_time) {
+			int up = target_volume_up();
+			int down = target_volume_down();
+
+			if(up) keymap[KEY_LEFT] = 1;
+			else if(down) keymap[KEY_RIGHT] = 1;
+			else if(pm8x41_get_pwrkey_is_pressed()) keymap[KEY_UP] = 1;
+		}
 
 		// update
 		update(delta);
+
+		if(delivered_key) {
+			keymap_delta = 0;
+			delivered_key = 0;
+		}
 
 		// sleep
 		wait = (10)-(current_time()-t1);

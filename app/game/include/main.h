@@ -6,5 +6,7 @@
 void fb_flip(void);
 long game_get_fps_real(void);
 long game_get_fps_limited(void);
+int isKeyPressed(int code);
+int isAnyKeyPressed(void);
 
 #endif
