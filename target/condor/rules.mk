@@ -6,7 +6,7 @@ INCLUDES += -I$(LK_TOP_DIR)/dev/gcdb/display -I$(LK_TOP_DIR)/dev/gcdb/display/in
 PLATFORM := msm8610
 
 ifeq ($(ENABLE_2NDSTAGE_BOOT),1)
-MEMBASE := 0x07C00000 # SDRAM
+MEMBASE := 0x8000 # SDRAM
 else
 MEMBASE := 0x07A00000 # SDRAM
 endif
