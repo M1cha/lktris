@@ -4,6 +4,7 @@
 int stone_posx = 0, stone_posy = 0;
 
 // private
+static int stone_initial_posy = 0;
 
 static struct stone stone1 = {
 	{
@@ -98,7 +99,20 @@ static unsigned getRandomStone(void) {
 }
 #endif
 
-void newStone(void) {
+static int stoneGetBottomLine(struct stone* stone) {
+	int x,y, height = 0;
+	for(y=0; y<(int)stone->diameter; y++) {
+		for(x=0; x<(int)stone->diameter; x++) {
+			if(active_stone.data[y][x]) {
+				height++;
+				break;
+			}
+		}
+	}
+	return height;
+}
+
+void newStone(struct fbconfig* fb) {
 	unsigned stone;
 #if LK
 	stone = myRand(0,6);
@@ -112,8 +126,9 @@ void newStone(void) {
 	}
 
 	active_stone = *stones[stone];
-	stone_posx = 0 - active_stone.offset_x;
-	stone_posy = 0 - active_stone.offset_y;
+	stone_posx = fb->grid_w/2 - active_stone.diameter/2 - active_stone.offset_x -1;
+	stone_posy = 0 - stoneGetBottomLine(&active_stone)-1;
+	stone_initial_posy = stone_posy;
 }
 
 void drawStone(struct fbconfig* fb) {
@@ -122,7 +137,11 @@ void drawStone(struct fbconfig* fb) {
 	for(i=0; i<active_stone.diameter; i++) {
 		for(j=0; j<active_stone.diameter; j++) {
 			if(active_stone.data[i][j]) {
-				fbGridSetColor(fb, MAP_POSX+stone_posx+j, MAP_POSY+stone_posy+i, active_stone.color);
+				int x = MAP_POSX+stone_posx+j;
+				int y = MAP_POSY+stone_posy+i;
+
+				if(x>=MAP_POSX && y>=MAP_POSY)
+					fbGridSetColor(fb, x, y, active_stone.color);
 			}
 		}
 	}
@@ -134,28 +153,49 @@ void copyStone2Map(void) {
 	for(i=0; i<active_stone.diameter; i++) {
 		for(j=0; j<active_stone.diameter; j++) {
 			if(active_stone.data[i][j]) {
+				int x = j+stone_posx;
+				int y = i+stone_posy;
+
+				if(x<0 || y<0)
+					continue;
+
 				map[j+stone_posx][i+stone_posy] = active_stone.color;
 			}
 		}
 	}
 }
 
-static int stoneOverlaps(int offset_x, int offset_y) {
+int stoneOverlaps(stone *data, int diameter, int offset_x, int offset_y) {
 	int x,y;
-	for(y=0; y<(int)active_stone.diameter; y++) {
-		for(x=0; x<(int)active_stone.diameter; x++) {
+	if(data==NULL) {
+		data = &active_stone.data;
+		diameter = active_stone.diameter;
+	}
+
+	for(y=0; y<diameter; y++) {
+		for(x=0; x<diameter; x++) {
 			if(
 				// we have a stone part
-				active_stone.data[y][x]
+				(*data)[y][x]
+
 				&& (
-					// position x/y <0
-					(stone_posx+x+offset_x<0 || stone_posy+y+offset_y<0)
+					// position x <0
+					(stone_posx+x+offset_x<0)
+
+					// position y < initial drop position
+					|| (stone_posy+y+offset_y<stone_initial_posy)
 
 					// position is outside map (right or bottom)
 					|| (stone_posx+x+offset_x>=MAP_WIDTH || stone_posy+y+offset_y>=MAP_HEIGHT)
 
-					// there's another stone on the map
-					|| map[stone_posx+x+offset_x][stone_posy+y+offset_y]
+					|| (
+						// range check for map
+						(stone_posx+x+offset_x>=0)
+						&& (stone_posy+y+offset_y>=0)
+
+						// there's another stone on the map
+						&& (map[stone_posx+x+offset_x][stone_posy+y+offset_y])
+					)
 				)
 			)
 				return 1;
@@ -165,29 +205,38 @@ static int stoneOverlaps(int offset_x, int offset_y) {
 }
 
 int stoneCanDown(void) {
-	return !stoneOverlaps(0,1);
+	return !stoneOverlaps(NULL, 0, 0, 1);
 }
 
 int stoneCanLeft(void) {
-	return !stoneOverlaps(-1, 0);
+	return !stoneOverlaps(NULL, 0, -1, 0);
 }
 
 int stoneCanRight(void) {
-	return !stoneOverlaps(1, 0);
+	return !stoneOverlaps(NULL, 0, 1, 0);
 }
 
 // http://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
-// TODO check collision after rotation
 void stoneDoRotate(void) {
 	int n=active_stone.diameter;
-	int tmp,i,j;
+	int i,j;
+	stone local_data;
+
+	// middle
+	local_data[n/2][n/2] = 	active_stone.data[n/2][n/2];
+
 	for (i=0; i<n/2; i++) {
 		for (j=i; j<n-i-1; j++) {
-			tmp=active_stone.data[i][j];
-			active_stone.data[i][j]=active_stone.data[j][n-i-1];
-			active_stone.data[j][n-i-1]=active_stone.data[n-i-1][n-j-1];
-			active_stone.data[n-i-1][n-j-1]=active_stone.data[n-j-1][i];
-			active_stone.data[n-j-1][i]=tmp;
+			local_data[i][j]=active_stone.data[j][n-i-1];
+			local_data[j][n-i-1]=active_stone.data[n-i-1][n-j-1];
+			local_data[n-i-1][n-j-1]=active_stone.data[n-j-1][i];
+			local_data[n-j-1][i]=active_stone.data[i][j];
 		}
-	}	
+	}
+
+	// check collision
+	if(!stoneOverlaps(&local_data, n, 0, 0)) {
+		for(i=0; i<n; i++)
+			memcpy(&active_stone.data[i], &local_data[i], sizeof(local_data[0]));
+	}
 }

@@ -9,5 +9,8 @@ OBJS += \
 	$(LOCAL_DIR)/game.o \
 	$(LOCAL_DIR)/stone.o \
 	$(LOCAL_DIR)/font.o \
+	$(LOCAL_DIR)/states/ingame.o \
+	$(LOCAL_DIR)/states/menu.o \
+	$(LOCAL_DIR)/states/gameover.o \
 	$(LOCAL_DIR)/../aboot/fastboot.o
 

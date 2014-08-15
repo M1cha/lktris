@@ -108,6 +108,24 @@ int font_printf(struct fbconfig* fb, unsigned fb_x, unsigned fb_y, const char *f
 	return err;
 }
 
+int font_printf_centered(struct fbconfig* fb, unsigned fb_y, const char *fmt, ...) {
+	char buf[256];
+	int err;
+
+	va_list ap;
+	va_start(ap, fmt);
+	err = vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	font_puts(fb, buf, fb->width/2-font_get_str_width(buf)/2, fb_y);
+
+	return err;
+}
+
 int font_get_height(void) {
 	return font_height;
+}
+
+int font_get_str_width(const char* str) {
+	return (strlen(str)*font_get_height());
 }

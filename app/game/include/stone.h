@@ -20,9 +20,10 @@ struct stone {
 extern int stone_posx;
 extern int stone_posy;
 
-void newStone(void);
+void newStone(struct fbconfig* fb);
 void drawStone(struct fbconfig* fb);
 void copyStone2Map(void);
+int stoneOverlaps(stone *data, int diameter, int offset_x, int offset_y);
 
 int stoneCanDown(void);
 int stoneCanLeft(void);
