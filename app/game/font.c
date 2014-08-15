@@ -14,7 +14,6 @@ static unsigned fontGetPixel(unsigned index) {
 	unsigned first = index * 3;
 
 	if(index>=font_width*font_height) {
-		printf("OutOfBounds\n");
 		return 0;
 	}
 
@@ -24,24 +23,6 @@ static unsigned fontGetPixel(unsigned index) {
 
 	return r<<16|g<<8|b;
 }
-
-/*static void fontSetPixel(unsigned index, unsigned color) {
-	short r,g,b;
-	unsigned first = index * 3;
-
-	if(index>=font_width*font_height) {
-		printf("OutOfBounds\n");
-		return;
-	}
-
-	r = (color & 0xFF0000) >> 16;
-	g = (color & 0x00FF00) >> 8;
-	b = (color & 0x0000FF) >> 0;
-
-	font[first] = r;
-	font[first+1] = g;
-	font[first+2] = b;
-}*/
 
 void font_init(void) {
 	unsigned i;

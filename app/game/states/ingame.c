@@ -80,10 +80,9 @@ static void ingame_init(struct fbconfig *config) {
 
 static void ingame_update(double delta) {
 	static unsigned time = 0, mod, c;
-	unsigned time_stone_drop = 500 - (400/10)*(level-1); // 70-1000
+	unsigned time_stone_drop = 500 - (400/10)*(level-1);
 	time+=(unsigned)delta;
 
-	//printf("stone: %d|%d\n", stone_posx, stone_posy);
 	// input
 	if(isKeyPressed(KEY_RIGHT) && stoneCanRight())
 		stone_posx++;
@@ -102,20 +101,17 @@ static void ingame_update(double delta) {
 		mutex_acquire(&map_lock);
 		if(!stoneCanDown()) {
 			// bottom reached
-			// TODO handel c>1
 
 			copyStone2Map();
 			tryClearMap();
 
 			newStone(fb);
-
 			if(stoneOverlaps(NULL, 0, 0, 1)) {
 				game_state_set_active("gameover", &score);
 			}
 		}
 		else stone_posy+=c;
 
-		if(c>1) printf("WARN: c==%d\n", c);
 		mutex_release(&map_lock);
 	}
 

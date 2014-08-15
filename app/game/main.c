@@ -201,7 +201,7 @@ static int update_thread(void *arg) {
 static long wait = 0;
 static int render_thread(void *arg) {
 	time_t t1;
-	//unsigned long wait;
+
 	while(1) {
 		// time: now
 		t1 = current_time();

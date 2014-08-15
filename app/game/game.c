@@ -74,14 +74,12 @@ void update(double delta) {
 
 void render(void) {
 	mutex_acquire(&render_lock);
+
 	// clear
 	memset(fb->buf, 0x0, fb->width*fb->height*fb->bpp/8);
 
 	if(active_state>=0)
 		states[active_state].render();
-
-	//font_printf(fb, 0, 0, "Time: %us", current_time()/1000);
-	//font_printf(fb, 0, 40, "FPS: %ld/%ld", game_get_fps_real(), game_get_fps_limited());
 
 	// flip
 	fb_flip();
