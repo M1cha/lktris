@@ -112,8 +112,8 @@ void mdelay(unsigned msecs)
 	writel(GPT_ENABLE_EN, GPT_ENABLE);
 	while (readl(GPT_COUNT_VAL) < msecs) ;
 
-	writel(0, GPT_ENABLE);
-	writel(0, GPT_CLEAR);
+	//writel(0, GPT_ENABLE);
+	//writel(0, GPT_CLEAR);
 }
 
 void udelay(unsigned usecs)
@@ -127,8 +127,8 @@ void udelay(unsigned usecs)
 	writel(GPT_ENABLE_EN, GPT_ENABLE);
 	while (readl(GPT_COUNT_VAL) < usecs) ;
 
-	writel(0, GPT_ENABLE);
-	writel(0, GPT_CLEAR);
+	//writel(0, GPT_ENABLE);
+	//writel(0, GPT_CLEAR);
 }
 
 /* Return current time in micro seconds */
