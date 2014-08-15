@@ -129,6 +129,8 @@ void fbGridSetColor(struct fbconfig* fb, int x, int y, int color) {
 	int x_real = x*fb->grid_phys_w;
 	int y_real = y*fb->grid_phys_h;
 
+	if(x<0 || y<0) return;
+
 	fbFillRect(fb, x_real, y_real, x_real+fb->grid_phys_w, y_real+fb->grid_phys_h, color);
 
 	// black border
